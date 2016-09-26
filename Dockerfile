@@ -18,4 +18,4 @@ RUN npm install -g bower
 
 RUN bower --allow-root install
 
-CMD ["gulp", "watch"]
+CMD ["./bin/www"]
