@@ -20,7 +20,7 @@ app.controller('MainController', ['$scope', '$interval', function($scope, $inter
             ctx.drawImage(img, 0, 0, 300, 400);
         }
     };
-
+    $scope.toilet = false;
     var t = $interval(function() {
         var Location = ncmb.DataStore("Location");
         Location.limit(5).order("createDate", true).fetchAll().then(function(results) {
@@ -35,8 +35,17 @@ app.controller('MainController', ['$scope', '$interval', function($scope, $inter
                     if (results.length <= i) {
                         break;
                     }
-                    circlex = results[i].x * ratiowidth;
-                    circley = results[i].y * ratioheight;
+                    var x = results[i].x;
+                    var y = results[i].y;
+                    if (i === 0) {
+                        if (81 < x && x < 184 && 253 < y && y < 295) {
+                            $scope.toilet = true;
+                        } else {
+                            $scope.toilet = false;
+                        }
+                    }
+                    circlex = x * ratiowidth;
+                    circley = y * ratioheight;
                     ctx.fillStyle = 'rgba(0, 141, 203, ' + (1.0 - alpharatio * i) + ')';
                     ctx.beginPath();
                     ctx.arc(circlex, circley, (num + 2 - i), 0, Math.PI * 2, true);
