@@ -9,26 +9,44 @@ app.controller('MainController', ['$scope', '$interval', function($scope, $inter
     var layer1 = document.getElementById("layer1");
     var layer2 = document.getElementById("layer2");
     var img = new Image();
-    img.src = "../images/room.jpg?" + new Date().getTime();
+    img.src = "../images/room.png?" + new Date().getTime();
     var ratiowidth = 1.0;
     var ratioheight = 1.0;
+    var iwidth = 900;
+    var iheight = 600;
     img.onload = function() {
         if (layer1.getContext) {
             var ctx = layer1.getContext('2d');
-            ratiowidth = 300 / img.width;
-            ratioheight = 400 / img.height;
-            ctx.drawImage(img, 0, 0, 300, 400);
+            ratiowidth = iwidth / img.width;
+            ratioheight = iheight / img.height;
+            ctx.drawImage(img, 0, 0, iwidth, iheight);
         }
     };
+    var users = null;
+    {
+        var User = ncmb.DataStore("User");
+        User.fetchAll().then(function(results) {
+            users = results;
+        });
+    }
     $scope.toilet = false;
     var t = $interval(function() {
+        if (users === null) { return; }
+        for (var u = 0; u < users.length; u++) {
+            mapping(u)
+        }
+    }, 1000);
+    var mapping = function(u) {
         var Location = ncmb.DataStore("Location");
-        Location.limit(5).order("createDate", true).fetchAll().then(function(results) {
+        Location.limit(5).equalTo("uuid", users[u].uuid).order("createDate", true).fetchAll().then(function(results) {
+            var r = users[u].R;
+            var g = users[u].G;
+            var b = users[u].B;
             $scope.x = results[0].x;
             $scope.y = results[0].y;
             if (layer2.getContext) {
                 var ctx = layer2.getContext('2d');
-                ctx.clearRect(0, 0, 300, 400);
+                ctx.clearRect(0, 0, iwidth, iheight);
                 var num = 5;
                 var alpharatio = 1.0 / (num + 1);
                 for (var i = 0; i < num; i++) {
@@ -37,28 +55,20 @@ app.controller('MainController', ['$scope', '$interval', function($scope, $inter
                     }
                     var x = results[i].x;
                     var y = results[i].y;
-                    if (i === 0) {
-                        if (81 < x && x < 184 && 253 < y && y < 295) {
-                            $scope.toilet = true;
-                        } else {
-                            $scope.toilet = false;
-                        }
-                    }
-                    circlex = x * ratiowidth;
-                    circley = y * ratioheight;
-                    ctx.fillStyle = 'rgba(0, 141, 203, ' + (1.0 - alpharatio * i) + ')';
+                    ratiox = x * ratiowidth;
+                    ratioy = y * ratioheight;
+                    ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (1.0 - alpharatio * i) + ')';
                     ctx.beginPath();
-                    ctx.arc(circlex, circley, (num + 2 - i), 0, Math.PI * 2, true);
+                    ctx.arc(ratiox, ratioy, (num + 2 - i), 0, Math.PI * 2, true);
                     ctx.fill();
+                    ctx.fillStyle = 'rgba(255, 255, 255, 1.0)';
+                    ctx.fillText(users[u].char, ratiox - 3, ratioy + 3);
                 }
-                /*
-                ctx.fillRect(circlex - 5, circley - 5, 10, 10);
-                */
             }
         }).catch(function(err) {
             $scope.err = err;
         });
-    }, 1000);
+    };
 
     $scope.onclick = function() {
         $interval.cancel(t);
