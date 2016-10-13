@@ -32,11 +32,15 @@ app.controller('MainController', ['$scope', '$interval', function($scope, $inter
     $scope.toilet = false;
     var t = $interval(function() {
         if (users === null) { return; }
-        for (var u = 0; u < users.length; u++) {
-            mapping(u)
+        if (layer2.getContext) {
+            var ctx = layer2.getContext('2d');
+            ctx.clearRect(0, 0, iwidth, iheight);
+            for (var u = 0; u < users.length; u++) {
+                mapping(u, ctx);
+            }
         }
     }, 1000);
-    var mapping = function(u) {
+    var mapping = function(u, ctx) {
         var Location = ncmb.DataStore("Location");
         Location.limit(5).equalTo("uuid", users[u].uuid).order("createDate", true).fetchAll().then(function(results) {
             var r = users[u].R;
@@ -44,23 +48,21 @@ app.controller('MainController', ['$scope', '$interval', function($scope, $inter
             var b = users[u].B;
             $scope.x = results[0].x;
             $scope.y = results[0].y;
-            if (layer2.getContext) {
-                var ctx = layer2.getContext('2d');
-                ctx.clearRect(0, 0, iwidth, iheight);
-                var num = 5;
-                var alpharatio = 1.0 / (num + 1);
-                for (var i = 0; i < num; i++) {
-                    if (results.length <= i) {
-                        break;
-                    }
-                    var x = results[i].x;
-                    var y = results[i].y;
-                    ratiox = x * ratiowidth;
-                    ratioy = y * ratioheight;
-                    ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (1.0 - alpharatio * i) + ')';
-                    ctx.beginPath();
-                    ctx.arc(ratiox, ratioy, (num + 2 - i), 0, Math.PI * 2, true);
-                    ctx.fill();
+            var num = 5;
+            var alpharatio = 1.0 / (num + 1);
+            for (var i = 0; i < num; i++) {
+                if (results.length <= i) {
+                    break;
+                }
+                var x = results[i].x;
+                var y = results[i].y;
+                ratiox = x * ratiowidth;
+                ratioy = y * ratioheight;
+                ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (1.0 - alpharatio * i) + ')';
+                ctx.beginPath();
+                ctx.arc(ratiox, ratioy, (num + 2 - i), 0, Math.PI * 2, true);
+                ctx.fill();
+                if (i === 0) {
                     ctx.fillStyle = 'rgba(255, 255, 255, 1.0)';
                     ctx.fillText(users[u].char, ratiox - 3, ratioy + 3);
                 }
