@@ -22,19 +22,41 @@ app.controller('MainController', ['$scope', '$interval', function($scope, $inter
             ctx.drawImage(img, 0, 0, iwidth, iheight);
         }
     };
-    var mappingInfos = [];
-    {
-        var User = ncmb.DataStore("User");
-        User.fetchAll().then(function(results) {
-            for (var i = 0; i < results.length; i++) {
-                mappingInfos.push({user: results[i], locations: null});
-            }
-        });
-    }
-    $scope.toilet = false;
+
+    // User情報の取得
+    $scope.userInfos = [];
+    var User = ncmb.DataStore("User");
+    User.fetchAll().then(function(results) {
+        for (var i = 0; i < results.length; i++) {
+            $scope.userInfos.push({user: results[i], locations: null});
+            $scope.userInfos[i].style = {
+                "background-color" : 'rgb(' + results[i].R + ',' + results[i].G + ',' + results[i].B + ')',
+                "text-align" : "center"
+            };
+            $scope.userInfos[i].areaName = "-";
+        }
+    });
+
+    // Area情報の取得
+    $scope.areas = [];
+    var Area = ncmb.DataStore("Area");
+    Area.fetchAll().then(function(results) {
+        var areas = [];
+        for (var i = 0; i < results.length; i++) {
+            areas.push({
+                x:Number(results[i].x),
+                y:Number(results[i].y),
+                width:Number(results[i].width),
+                height:Number(results[i].height),
+                name: results[i].name
+            });
+        }
+        $scope.areas = areas;
+    });
+
     var t = $interval(function() {
         if (layer2.getContext) {
-            for (var i = 0; i < mappingInfos.length; i++) {
+            for (var i = 0; i < $scope.userInfos.length; i++) {
                 getLocation(i);
             }
         }
@@ -43,13 +65,10 @@ app.controller('MainController', ['$scope', '$interval', function($scope, $inter
         if (layer2.getContext) {
             var ctx = layer2.getContext('2d');
             ctx.clearRect(0, 0, iwidth, iheight);
-            for (var i = 0; i < mappingInfos.length; i++) {
-                var locations = mappingInfos[i].locations;
+            for (var i = 0; i < $scope.userInfos.length; i++) {
+                var locations = $scope.userInfos[i].locations;
                 if (locations !== null) {
-                    var user = mappingInfos[i].user;
-                    var r = user.R;
-                    var g = user.G;
-                    var b = user.B;
+                    var user = $scope.userInfos[i].user;
                     var num = 5;
                     var alpharatio = 1.0 / (num + 1);
                     for (var j = 0; j < num; j++) {
@@ -58,7 +77,7 @@ app.controller('MainController', ['$scope', '$interval', function($scope, $inter
                         var y = locations[j].y;
                         ratiox = x * ratiowidth;
                         ratioy = y * ratioheight;
-                        ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (1.0 - alpharatio * j) + ')';
+                        ctx.fillStyle = 'rgba(' + user.R + ',' + user.G + ',' + user.B + ',' + (1.0 - alpharatio * j) + ')';
                         ctx.beginPath();
                         ctx.arc(ratiox, ratioy, (num + 2 - j), 0, Math.PI * 2, true);
                         ctx.fill();
@@ -71,16 +90,36 @@ app.controller('MainController', ['$scope', '$interval', function($scope, $inter
             }
         }
     });
-    var getLocation = function(i) {
+
+    var getLocation = function(userIdx) {
         var Location = ncmb.DataStore("Location");
-        Location.limit(5).equalTo("uuid", mappingInfos[i].user.uuid).order("createDate", true).fetchAll().then(function(results) {
-            mappingInfos[i].locations = results;
+        Location.limit(5).equalTo("uuid", $scope.userInfos[userIdx].user.uuid).order("createDate", true).fetchAll().then(function(results) {
+            var locations = [];
+            for (var i = 0; i < results.length; i++) {
+                locations.push({x: Number(results[i].x), y: Number(results[i].y)});
+            }
+            $scope.userInfos[userIdx].locations = locations;
+            checkWhereInArea(userIdx);
         }).catch(function(err) {
             $scope.err = err;
         });
     };
 
-    $scope.onclick = function() {
+    var checkWhereInArea = function(userIdx) {
+        var locations = $scope.userInfos[userIdx].locations;
+        if (locations.length <= 0) { return; }
+        for (var i = 0; i < $scope.areas.length; i++) {
+            var area = $scope.areas[i];
+            var location = $scope.userInfos[userIdx].locations[0];
+            if (area.x <= location.x && location.x <= area.x + area.width && area.y <= location.y && location.y <= area.x + area.height) {
+                $scope.userInfos[userIdx].areaName = area.name;
+                return;
+            }
+        }
+        $scope.userInfos[i].areaName = "-";
+    };
+
+    $scope.onStopUpdateLocation = function() {
         $interval.cancel(t);
         $interval.cancel(t_draw);
     };

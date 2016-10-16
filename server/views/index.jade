@@ -2,11 +2,24 @@ extends layout
 
 block content
   div
-    div {{err}}
-    button(ng-click="onclick()") ストップ
-    hr
-    div(ng-show="toilet")
-      p toilet
+    // 系列
+    ul.nav.nav-tabs
+      li.active(role='presentation')
+        a(href='#') リアルタイム
+    br
 
-    canvas#layer1(width='900', height='600', style='position: absolute; left: 100; top: 100; z-index: 0;')
-    canvas#layer2(width='900', height='600', style='position: absolute; left: 100; top: 100; z-index: 1;')
+    button.btn.btn-default(type='button', ng-click="onStopUpdateLocation()") 更新停止
+
+    hr.col-sm-12
+
+    div(ng-repeat='m in userInfos')
+      div
+        p.col-sm-1(ng-style="m.style") {{m.user.char}}
+        p.col-sm-2 {{m.user.name}}
+        p.col-sm-9 {{m.areaName}}
+
+    hr.col-sm-12
+
+    div.col-sm-12
+      canvas#layer1(width='900', height='600', style='position: absolute; left: 100; top: 100; z-index: 0;')
+      canvas#layer2(width='900', height='600', style='position: absolute; left: 100; top: 100; z-index: 1;')
